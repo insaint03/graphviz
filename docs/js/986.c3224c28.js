@@ -1,0 +1,2 @@
+"use strict";(self["webpackChunkgraphviz"]=self["webpackChunkgraphviz"]||[]).push([[986],{3986:function(n,t,u){u.r(t),u.d(t,{default:function(){return c}});var a=function(){var n=this;n._self._c;return n._m(0)},e=[function(){var n=this,t=n._self._c;return t("div",{staticClass:"about"},[t("h1",[n._v("This is an about page")])])}],r={name:"AboutScreen",data(){return{}}},s=r,i=u(1001),l=(0,i.Z)(s,a,e,!1,null,null,null),c=l.exports}}]);
+//# sourceMappingURL=986.c3224c28.js.map
