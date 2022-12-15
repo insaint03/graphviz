@@ -28,7 +28,11 @@ export default {
     data() {
         return {
             links: sampleLinks,
-            nodes: [],
+            nodes: sampleLinks.reduce((agg, [src,trg])=>{
+                if(!agg.includes(src)) agg.push(src);
+                if(!agg.includes(trg)) agg.push(trg);
+                return agg;
+            }, []),
             searches: '',
         };
     }

@@ -1,8 +1,39 @@
 <template>
-    <div ref="vgraph" id="vgraph" />
+    <div ref="canvas" id="vgraph" />
 </template>
 <script>
-import {Graph} from 'vivagraphjs';
+import cytoscape from 'cytoscape'
+import cola from 'cytoscape-cola';
+
+cytoscape.use( cola );
+
+const canvasStyles = {
+    node: {
+        'background-color': '#e0e0e',
+        label: 'data(id)',
+        'text-valign': 'center',
+        'text-halign': 'center',
+    },
+    edge: {
+        width: 3,
+        'line-color': '#ccc',
+        'target-arrow-color': '#ccc',
+        'target-arrow-shape': 'triangle',
+        'curve-style': 'bezier',
+        label: 'data(label)',
+        "edge-text-rotation": "autorotate"
+    },
+}
+// const samples = [
+//     {group: 'nodes', data: {id: 'A', label: 'A'}},
+//     {group: 'nodes', data: {id: 'B', label: 'B'}},
+//     {group: 'nodes', data: {id: 'C', label: 'C'}},
+//     {group: 'nodes', data: {id: 'D', label: 'D'}},
+//     {group: 'edges', data: {source: 'A', target: 'B', label: 'lab'}},
+//     {group: 'edges', data: {source: 'A', target: 'C', label: 'lab'}},
+//     {group: 'edges', data: {source: 'B', target: 'D', label: 'lab'}},
+//     {group: 'edges', data: {source: 'C', target: 'B', label: 'lab'}},
+// ];
 
 export default {
     name: 'v-graph',
@@ -11,62 +42,48 @@ export default {
         links: Array,
     },
     methods: {
-        show() {
-            this.renderer.run();
+        layouts() {
+            this.graph.layout({name: 'cola'}).run();
+        },
+        onNodeDragOut(ev) {
+            this.layouts();
+            console.log(ev);
+        },
+        onNodeDoubleClicked(ev) {
+            let source = ev.target.id();
+            let target = source + '`';
+            this.graph.add([
+                {group: 'nodes', data: {id: target}},
+                {group: 'edges', data: {source, target}},
+            ]);
+            this.layouts();
         }
     },
     mounted() {
+        // this.graph.add(samples);
 
-        this.show();
+        this.graph.mount(this.$refs.canvas);
+        this.layouts();
+        // this.graph.layout({name: 'cola'}).run();
+
+        this.graph.on('tapdragout', 'nodes', this.onNodeDragOut);
+        this.graph.on('dblclick', 'nodes', this.onNodeDoubleClicked);
     },
     computed: {
-        canvas() {
-            return this.$refs.vgraph;
-        },
-        graph() {
-            let g = Graph.graph();
-            this.nodes.forEach((n)=> {
-                g.addNode.apply(...n); 
-            });
-            this.links.forEach((ln)=> {
-                g.addLink(...ln);
-            });
-            return g;
-        },
-        hasWebGLSupport() {
-          try {
-            let canvas = document.createElement('canvas');
-            return true && canvas.getContext('webgl');
-          } catch {
-            return false;
-          }
-        },
-        layout() {
-            return Graph.Layout.forceDirected(this.graph, {
-                springLength : 50,
-                springCoeff : 1e-4,
-                dragCoeff : 0.005,
-                gravity : -1.5,
-                theta : 0.75,
-            });
-        },
-        graphics() {
-            return this.hasWebGLSupport 
-                ? Graph.View.webglGraphics() 
-                : Graph.View.svgGraphics();
-        },
-        renderer() {
-            return Graph.View.renderer(this.graph, {
-                layout: this.layout,
-                graphics: this.graphics,
-                renderLinks: true,
-                container: this.canvas,
-            });
-        }
     },
     data() {
+        let ns = this.nodes.map((n)=>{return {data: {id: n}}});
+        let ls = this.links.map(([source,target])=>{ return {data: {source,target}}});
+
+
         return {
-            // graph: Graph.graph(),
+            graph: cytoscape({
+                // container: this.$refs.vgraph ,
+                elements: ns.concat(ls),
+                style: Object.entries(canvasStyles).map(([selector, style])=>{
+                    return {selector, style}
+                }),
+            }),
         }
     }
 }
@@ -77,7 +94,7 @@ div#vgraph {
     min-height: 800px;
     min-width: 600px;
 }
-div#vgraph > canvas {
+div#vgraph {
     width: 100%;
     height: 100%;
 }
