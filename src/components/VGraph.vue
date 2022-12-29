@@ -31,7 +31,7 @@ const canvasStyles = {
         tooltip: (node)=>JSON.stringify(node.data),
     },
     edge: {
-        width: 3,
+        width: .5,
         'line-color': '#eee',
         'target-arrow-color': '#eee',
         'target-arrow-shape': 'triangle',
