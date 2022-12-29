@@ -22,6 +22,7 @@
 <script>
 import routes from '@/plugins/router/routes'
 
+
 export default {
   name: 'ApplicationMain',
   data() {
