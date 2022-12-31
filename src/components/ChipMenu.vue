@@ -1,10 +1,10 @@
 <template>
     <v-menu offset-x>
         <template #activator="{on, attrs}">
-            <v-chip color="primary" dark v-bind="attrs" v-on="on">
+            <v-btn color="accent" v-bind="attrs" v-on="on" outlined>
                 {{label}}
                 <v-icon v-if="0<options.length">mdi-menu-down</v-icon>
-            </v-chip>
+            </v-btn>
         </template>
         <v-list dense>
             <v-list-item v-for="(nxt,ni) in options" :key="`selected-chip.${label}.${ni}`"

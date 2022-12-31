@@ -16,9 +16,11 @@
     "cytoscape-euler": "^1.2.2",
     "cytoscape-popper": "^2.0.0",
     "cytoscape-qtip": "^2.8.0",
+    "elkjs": "^0.8.2",
     "vue": "^2.6.14",
     "vue-router": "^3.5.1",
-    "vuetify": "^2.6.0"
+    "vuetify": "^2.6.0",
+    "web-worker": "^1.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
