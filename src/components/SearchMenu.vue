@@ -52,7 +52,6 @@ export default {
                     ch._indent = cursor._indent + 1;
                 });
                 stack = children.concat(stack);
-                // console.log('stack', children, stack);
             }
         }
         this.tree = rss;

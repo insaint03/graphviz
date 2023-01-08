@@ -16,19 +16,28 @@ const canvasStyles = {
         label: 'data(id)',
         'text-valign': 'center',
         'text-halign': 'center',
+        'font-size': 8,
     },
     'node[_type="Class"]': {
-        'background-color': '#eee',
-        'border-width': '2px',
-        'border-color': '#ccc',
+        'background-color': '#9CD2BB',
+        'border-width': '1px',
+        'border-color': '#0A4B2F',
         'font-size': 10,
+        shape: 'diamond',
     },
     'node[_type="NamedIndividual"]' : {
-        'background-color': '#ccc',
+        'background-color': '#9BB7CC',
         label: 'data(id)',
         'border-width': '0px',
-        'font-size': 8,
         tooltip: (node)=>JSON.stringify(node.data),
+        shape: 'ellipse',
+    },
+    'node[_type="DatatypeProperty"]' : {
+        'background-color': '#A5A5D4',
+        'border-width': '1px',
+        'border-color': '#14144C',
+        'font-size': 8,
+        shape: 'round-rectangle',
     },
     edge: {
         width: .5,
@@ -63,46 +72,32 @@ export default {
             options.refresh = Math.max(1, Math.ceil(Math.log2(this.nodes.length)));
             this.graph.layout(options).run();
         },
-        onNodeDragOut(ev) {
+        onNodeDragOut() {
             this.layouts();
-            console.log(ev);
         },
         onNodeHover(ev) {
             this.$emit('hover', ev);
-
         },
         onNodeDoubleClicked(ev) {
-            // let source = ev.target.id();
-            // let target = source + '`';
-            // this.graph.add([
-            //     {group: 'nodes', data: {id: target}},
-            //     {group: 'edges', data: {source, target}},
-            // ]);
-            // this.layouts();
             this.$emit('extend', ev);
         }
     },
     mounted() {
         // this.graph.add(samples);
-
         this.graph.mount(this.$refs.canvas);
         this.layouts();
-        // this.graph.layout({name: 'cola'}).run();
 
         this.graph.on('tapdragout', 'nodes', this.onNodeDragOut);
         this.graph.on('hover', 'nodes', this.onNodeHover);
         this.graph.on('dblclick', 'nodes', this.onNodeDoubleClicked);
-        // this.graph.((n)=>{
-        //     console.log(n);
-        //     _bindPopper(n);
-        // })
     },
     computed: {
     },
     data() {
         let ns = this.nodes.map((n)=>{return {data: n}});
         let ls = this.links.map((l)=>{return {data: l}});
-
+        
+        console.log(`vg.${ns.length}`, ns.map(({data})=>`[${data._type}] ${data._name}`).join('\n'));
 
         return {
             graph: cytoscape({

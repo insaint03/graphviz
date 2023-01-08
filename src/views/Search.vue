@@ -56,10 +56,11 @@ export default {
         refreshGraph() {
             this.stamped = Date.now();
         },
+
         siblings(level) {
-            return (0<level) 
-                ? (this.selecteds[level-1] || {})._child.filter((c)=>c._type==this.keys.category)
-                : this.hierarchy;
+            return 0===level ? this.hierarchy
+                : (this.selecteds[level-1] || {})
+                    ._child.filter((c)=>c._type==this.keys.category);
         },
         choose(ev) {
             let sels = [];
@@ -79,9 +80,10 @@ export default {
             this.extensions = [];
         },
         extent(ev) {
-            // console.log('extent', ev.target.data());
             let target = ev.target.data();
-            if(target._child.length<=0) return;
+            let extension = (target._child || []).length + (target._props || []).length;
+            if(extension <=0)
+                return;
             let exts = [].concat(this.extensions);
             exts.push(target);
 
@@ -90,34 +92,39 @@ export default {
         removeExtent(item) {
             this.extensions = this.extensions.filter((ex)=>ex.id!=item.id);
         },
-
+        dataEntries(item) {
+            return Object.entries(item)
+                .filter(([k,])=>/^(_.+|type)/.test(k));
+        },
         appendNodes(node) {
-            return node ? [node].concat(node._child) : [];
+            if(!node) return [];
+            let nexts = (node._child || []).concat(node._props || [])
+            return [node].concat(nexts);
         },
         appendAffiliations(node) {
-            return node ? node._child.map((child) => {
+            if(!node) return [];
+            let nexts = (node._child || []).concat(node._props || []);
+            return nexts.map((x)=>{
                 return {
                     source: node.id,
-                    target: child.id,
-                };
-            }) : [];
+                    target: x.id,
+                }
+            });
         },
         trackParent(node) {
             let theName =  node._type === this.keys.class ? node.subClassOf : node.type;
-            console.log(`${node.id} > ${theName}`);
             return theName ? this.categories[theName] : null;
         },
         track(node) {
             let ancestors = [];
             let cs = node;
+            let max = 4;
             do {
-                if(cs._type!==this.keys.entity) {
+                if(cs._type===this.keys.class) {
                     ancestors.push(cs);
-                }
-                console.log('a',cs,cs._type!==this.keys.entity,ancestors);
+                } 
                 cs = this.trackParent(cs);
-            } while(cs);
-            console.log("an", node, ancestors);
+            } while(cs && 0<=max);
             let sels = ancestors.reverse();
             this.cursor = sels[sels.length-1];
             this.selecteds = sels.concat([null]);
@@ -125,9 +132,6 @@ export default {
         }
     },
     watch: {
-        // selecteds() {
-        //     console.log(this.nodes, this.links);
-        // }
         cursor() {
             this.refreshGraph();
         },
@@ -143,31 +147,26 @@ export default {
             // with cursor
             let ns = this.appendNodes(this.cursor);
             this.extensions.forEach((ex)=>{
-                let nids = ns.map((n)=>n.id);
-                ns.push(...this.appendNodes(ex)
-                    .filter((ex)=>!nids.includes(ex.id)));
+                let nids = ns.map(this.to_string);
+                ns = ns.concat(this.appendNodes(ex).filter((ex)=>!nids.includes(this.to_string(ex))));
             });
             return ns;
         },
         links() {
-            if(this.cursor) {
-                let ls = this.appendAffiliations(this.cursor);
-
-                this.extensions.forEach((ex)=>{
-                    ls.push(...this.appendAffiliations(ex));
-                });
-                return ls;
-            } else {
-                return [];
-            }
+            return this.nodes.reduce((gg, src)=>{
+                let nexts = (src._child || []).concat(src._props || []);
+                return gg.concat(this.nodes.filter((trg)=>src!==trg && nexts.includes(trg))
+                    .map((trg) => {
+                        return {
+                            source: src.id,
+                            target: trg.id,
+                        }
+                    }));
+            }, []);
         }
     },
     mounted() {
         this.selecteds = [this.hierarchy[0]];
-        // this.choose({
-        //     value: this.hierarchy[0],
-        //     level: 0
-        // });
     },
     data() {
         return {
