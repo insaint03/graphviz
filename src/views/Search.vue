@@ -153,7 +153,10 @@ export default {
             return ns;
         },
         links() {
-            return this.nodes.reduce((gg, src)=>{
+            return this.nodes
+                // reducing property sources
+                .filter((node)=>node._type!==this.keys.property)
+                .reduce((gg, src)=>{
                 let nexts = (src._child || []).concat(src._props || []);
                 return gg.concat(this.nodes.filter((trg)=>src!==trg && nexts.includes(trg))
                     .map((trg) => {
