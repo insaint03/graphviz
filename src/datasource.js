@@ -54,6 +54,23 @@ categories
 
 // build hierarchy
 const hierarchy = subclass_of();
+// hierarchy traversed level
+const hierarchy_levels = hierarchy.reduce((g, root)=>{
+    // travers subclasses
+    let stack = [{n:root, l:0}];
+    let depth = 0;
+    while(0<stack.length) {
+        let cursor = stack.shift();
+        if(cursor.n._child && 0<cursor.n._child.length) {
+            let next_lv = cursor.l + 1;
+            depth = Math.max(depth, next_lv);
+            stack.push(...cursor.n._child.map((ch)=>{
+                return {n:ch, l:next_lv};
+            }));
+        }
+    }
+    return Math.max(g, depth);
+}, 0);
 
 
 
@@ -109,8 +126,10 @@ export default {
     categories: _dictionary(categories),
     // class categories, hierarchial
     hierarchy,
+    hierarchy_levels,
     // object entities, dictionary typed
     entities: _dictionary(entities),
+    _entities: entities,
     // semantic map
     semantics,
     // key names

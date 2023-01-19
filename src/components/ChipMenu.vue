@@ -1,16 +1,19 @@
 <template>
     <v-menu offset-x>
         <template #activator="{on, attrs}">
-            <v-btn color="accent" v-bind="attrs" v-on="on" outlined>
+            <v-btn color="default" v-bind="attrs" v-on="on" block :disabled="!hasMore">
                 {{label}}
-                <v-icon v-if="0<options.length">mdi-menu-down</v-icon>
+                <v-spacer />
+                <v-icon v-if="hasMore">mdi-menu-down</v-icon>
             </v-btn>
         </template>
         <v-list dense>
             <v-list-item v-for="(nxt,ni) in options" :key="`selected-chip.${label}.${ni}`"
                 @click="choose(nxt)">
-                <v-list-item-title>{{nxt._name}} ({{nxt._child.length}})</v-list-item-title>
-            </v-list-item>
+                <v-list-item-title>
+                    {{nxt._name}} 
+                    <template v-if="nxt._child && 0<nxt._child.length">({{nxt._child.length}})</template></v-list-item-title>
+                </v-list-item>
         </v-list>
     </v-menu>
 </template>
@@ -25,12 +28,18 @@ export default {
         level: Number,
     },
     computed: {
+        hasMore() {
+            return this.options && 0<this.options.length;
+        },
         label() {
             return this.value ? this.value._name || '' : '';
         },
         countChildren() {
             return this.value && this.value._child ? `(${this.value._child.length})` : '';
         }
+    },
+    mounted() {
+        console.log('chip lv', this.$props);
     },
     methods: {
         choose(target) {

@@ -1,19 +1,17 @@
 <template>
     <v-card elevation="3">
         <v-card-title>
-            <v-toolbar dark extended elevation="0" class="mx-0">
-                <v-toolbar-items>
-                    <chip-menu v-for="_,si in selecteds" 
-                        :key="`search-tool.category.${si}`"
-                        v-model="selecteds[si]"
-                        :options="siblings(si)"
-                        :level="si"
-                        @change="choose"
-                    />
-                </v-toolbar-items>
-                <v-spacer />
-                <search-menu :items="hierarchy"
-                    @select="track" />
+            <v-toolbar extended elevation="0" class="mx-0 navigation-tools">
+                <template v-for="si in (0,hierarchy_levels)">
+                    <v-col cols="2" :key="`search-nav.category.${si}`" align-self="stretch">
+                        <chip-menu v-model="selecteds[si-1]" 
+                            :options="siblings[si-1]" 
+                            :level="si-1" @change="choose" />
+                    </v-col>
+                </template>
+                <v-col cols="4" align-self="stretch">
+                    <search-menu :items="hierarchy" @select="track" />
+                </v-col>
                 <template #extension>
                     <v-chip-group>
                         <v-chip outlined><v-icon>mdi-plus</v-icon></v-chip>
@@ -57,24 +55,27 @@ export default {
             this.stamped = Date.now();
         },
 
-        siblings(level) {
-            return 0===level ? this.hierarchy
-                : (this.selecteds[level-1] || {})
-                    ._child.filter((c)=>c._type==this.keys.category);
-        },
+        // siblings(level) {
+        //     let runs = 0===level ? this.hierarchy : this.selecteds[level-1];
+        //     try {
+        //         return runs._child.filter((c)=>c._type==this.keys.category);
+        //     } catch {
+        //         return [];
+        //     }
+        // },
         choose(ev) {
-            let sels = [];
-            for(let i=0; i<=ev.level; i++) {
-                sels.push((i==ev.level && ev.value) 
-                    ? ev.value 
-                    : this.selecteds[i]);
-            }
-            // children
-            let children = ev.value._child.filter((c)=>c._type==this.keys.category);
-            if(0<children.length) {
-                sels[ev.level+1] = null;
-            }
-            this.selecteds = sels;
+            // update selecteds
+            this.selecteds = this.selecteds.map((sel,lv)=>{
+                console.log(lv, sel, ev);
+                if(lv==ev.level) {
+                    return ev.value;
+                }
+                else if(lv<ev.level) {
+                    return sel;
+                } else {
+                    return null; 
+                }
+            });
             this.cursor = ev.value;
             // clear extensions
             this.extensions = [];
@@ -166,15 +167,34 @@ export default {
                         }
                     }));
             }, []);
+        }, 
+        siblings() {
+            let stems = this.selecteds
+                .filter((_,lv)=>lv+1<this.hierarchy_levels)
+                .map((se)=>{
+                    try { 
+                        return (se._child || [])
+                            .filter((ch)=>ch._type == this.keys.category); 
+                    }
+                    catch{ return []; }
+                });
+            stems = [this.hierarchy].concat(stems);
+            console.log('stems', this.selecteds, stems);
+            return stems;
+        },
+        items() {
+            // TODO: fit items
+            return [];
+
         }
     },
     mounted() {
-        this.selecteds = [this.hierarchy[0]];
+        // this.selecteds = [this.hierarchy[0]];
     },
     data() {
         return {
             searches: '',
-            selecteds: [],
+            selecteds: new Array(dataset.hierarchy_levels).fill(null),
             stamped: Date.now(),
             cursor: null,
             extensions: [],
