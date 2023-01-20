@@ -10,11 +10,11 @@ function _filtered_raw(typed) {
         });
 }
 
-function _extracts(e) {
-    return Object.fromEntries(Object.entries(e).filter(([k,])=>!/^_/.test(k)));
-}
+// function _extracts(e) {
+//     return Object.fromEntries(Object.entries(e).filter(([k,])=>!/^_/.test(k)));
+// }
 
-function _dictionary(mappable, keyFn=(e)=>e._name, vFn=_extracts) {
+function _dictionary(mappable, keyFn=(e)=>e._name, vFn=(e)=>e) {
     let entries = mappable.map((e)=>[keyFn(e), vFn(e)]);
     return Object.fromEntries(entries);
 }
@@ -107,6 +107,10 @@ function to_string(item) {
     return `[${item._type}] ${item._name}`;
 }
 
+function childs_of(entity, _type) {
+    return (entity._child || []).filter((el)=>el._type === _type)
+}
+
 // entity-property, class mapping
 entities.forEach((en)=>{
     en._props = Object.entries(en)
@@ -140,4 +144,5 @@ export default {
     },
     // 
     to_string,
+    childs_of,
 }

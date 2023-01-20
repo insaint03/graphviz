@@ -2,7 +2,7 @@
     <v-menu offset-x>
         <template #activator="{on, attrs}">
             <v-btn color="default" v-bind="attrs" v-on="on" block :disabled="!hasMore">
-                {{label}}
+                {{label || alt}}
                 <v-spacer />
                 <v-icon v-if="hasMore">mdi-menu-down</v-icon>
             </v-btn>
@@ -26,20 +26,21 @@ export default {
     props: {
         options: Array,
         level: Number,
+        alt: String,
     },
     computed: {
         hasMore() {
             return this.options && 0<this.options.length;
         },
         label() {
-            return this.value ? this.value._name || '' : '';
+            return this.value ? this.value._name : '';
         },
         countChildren() {
             return this.value && this.value._child ? `(${this.value._child.length})` : '';
         }
     },
-    mounted() {
-        console.log('chip lv', this.$props);
+    updated() {
+        console.log('chip lv', this.value, this.alt);
     },
     methods: {
         choose(target) {

@@ -97,8 +97,6 @@ export default {
     data() {
         let ns = this.nodes.map((n)=>{return {data: n}});
         let ls = this.links.map((l)=>{return {data: l}});
-        
-        console.log(`vg.${ns.length}`, ns.map(({data})=>`[${data._type}] ${data._name}`).join('\n'));
 
         return {
             graph: cytoscape({

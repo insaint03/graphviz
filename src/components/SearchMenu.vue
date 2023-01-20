@@ -5,15 +5,15 @@
                 hide-details
                 append-icon="mdi-magnify"
                 single-line
-                v-model.lazy="searches"
+                v-model="value"
                 v-on="on"
                 v-bind="attrs">
             </v-text-field>
         </template>
         <v-list dense style="max-height: 50vh; overflow-y:auto;">
-            <v-list-item v-for="(item,idx) in tree" :key="`search-menu.query.${idx}`"
+            <v-list-item v-for="(item,idx) in items" :key="`search-menu.query.${idx}`"
                 v-show="test(item[keySearch])"
-                @click="$emit('select', item)">
+                @click="onSelect(item)">
                 <v-list-item-title :style="`padding-left: ${8*item._indent}px`">
                     {{ item[keySearch] }}
                 </v-list-item-title>
@@ -33,39 +33,44 @@ export default {
     },
     methods: {
         test(value) {
-            return this.filter ? this.filter.test(value) : false;
+            return this.filter 
+                ? this.filter.test(value) 
+                : true;
         },
-    },
-    mounted() {
-        let stack = [].concat(this.items);
-        let rss = [];
-
-        while(0<stack.length) {
-            let cursor = stack.shift();
-            let children = cursor[this.keyChild];
-            
-            cursor._indent = cursor._indent || 0;
-            rss.push(cursor);
-            // prepand children
-            if(children && 0<children.length) {
-                children.forEach((ch)=>{
-                    ch._indent = cursor._indent + 1;
-                });
-                stack = children.concat(stack);
-            }
+        onSelect(item) {
+            console.log('on select', item);
+            // set name
+            this.value = item._name;
+            // emit item name
+            this.$emit('select', item);
         }
-        this.tree = rss;
+    },
+    watch: {
+        filter() {
+            if(this.runningLock) { return; }
+            // copy filter
+            this.filter_saved = this.filter;
+            this.runningLock = true;
+            // release lock after .1 seconds
+            setTimeout(()=>{
+                this.runningLock = false;
+            }, 100);
+        }
     },
     computed: {
         filter() {
-            return this.searches ? new RegExp(this.searches, RegExp.I) : null;
+            if(this.runningLock) {
+                return this.filter_saved;
+            }
+            return new RegExp(this.value || '.*', RegExp.I);
         }
     },
     data() {
         return {
             query: null,
-            searches: null,
-            tree: [],
+            value: null,
+            runningLock: false,
+            filter_saved: /.*/i,
         }
     },
 }

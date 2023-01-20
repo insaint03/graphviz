@@ -3,14 +3,17 @@
         <v-card-title>
             <v-toolbar extended elevation="0" class="mx-0 navigation-tools">
                 <template v-for="si in (0,hierarchy_levels)">
-                    <v-col cols="2" :key="`search-nav.category.${si}`" align-self="stretch">
-                        <chip-menu v-model="selecteds[si-1]" 
+                    <v-col cols="2" :key="`search-nav.category.${si}.${stamped}`" 
+                        align-self="stretch" class="flex-grow-2 ma-0 pa-1">
+                        <chip-menu v-model="selecteds[si-1]"
+                            :alt="selecteds[si-1] ? selecteds[si-1].id : '-'"
                             :options="siblings[si-1]" 
                             :level="si-1" @change="choose" />
                     </v-col>
                 </template>
-                <v-col cols="4" align-self="stretch">
-                    <search-menu :items="hierarchy" @select="track" />
+                <v-col cols="4" :key="`search-nav.entity.${stampq}`"
+                    align-self="stretch" class="flex-grow-4 ma-0 pa-1">
+                    <search-menu v-model="query" :items="items" @select="track" />
                 </v-col>
                 <template #extension>
                     <v-chip-group>
@@ -54,19 +57,12 @@ export default {
         refreshGraph() {
             this.stamped = Date.now();
         },
-
-        // siblings(level) {
-        //     let runs = 0===level ? this.hierarchy : this.selecteds[level-1];
-        //     try {
-        //         return runs._child.filter((c)=>c._type==this.keys.category);
-        //     } catch {
-        //         return [];
-        //     }
-        // },
+        refreshQuery() {
+            this.stampq = Date.now();
+        },
         choose(ev) {
             // update selecteds
             this.selecteds = this.selecteds.map((sel,lv)=>{
-                console.log(lv, sel, ev);
                 if(lv==ev.level) {
                     return ev.value;
                 }
@@ -76,19 +72,30 @@ export default {
                     return null; 
                 }
             });
-            this.cursor = ev.value;
             // clear extensions
             this.extensions = [];
+            // clear query
+            this.query = null;
+            this.refreshQuery();
+            // update cursor setup
+            this.cursor = ev.value;
         },
         extent(ev) {
             let target = ev.target.data();
-            let extension = (target._child || []).length + (target._props || []).length;
-            if(extension <=0)
-                return;
-            let exts = [].concat(this.extensions);
-            exts.push(target);
-
-            this.extensions = exts.filter((_,len)=>len<extensionThreshold);
+            let exts = [];
+            // on extending entity - refresh egonet
+            if(target._type === this.keys.entity) {
+                this.extensions = [];
+                this.cursor = target;
+            } else {
+                exts = [].concat(this.extensions);
+                exts.push(target);
+                // cut off from start
+                while(extensionThreshold<exts.length) {
+                    exts.shift();
+                }
+                this.extensions = exts;
+            }
         },
         removeExtent(item) {
             this.extensions = this.extensions.filter((ex)=>ex.id!=item.id);
@@ -99,8 +106,17 @@ export default {
         },
         appendNodes(node) {
             if(!node) return [];
-            let nexts = (node._child || []).concat(node._props || [])
-            return [node].concat(nexts);
+
+            let nexts = [node].concat(node._child || []);
+
+            // entity class
+            if(node._type === this.keys.entity) {
+                // appending props
+                nexts.push(...(node._props || []));
+                // appending the class
+                nexts.push(this.categories[node.type]);
+            } 
+            return nexts;
         },
         appendAffiliations(node) {
             if(!node) return [];
@@ -113,27 +129,45 @@ export default {
             });
         },
         trackParent(node) {
-            let theName =  node._type === this.keys.class ? node.subClassOf : node.type;
-            return theName ? this.categories[theName] : null;
+            return node
+                ? (node.type || node.subClassOf)
+                : null;
         },
         track(node) {
             let ancestors = [];
+            // re-select
+            // node = this.entities[node.id];
             let cs = node;
-            let max = 4;
+            let max = this.hierarchy_levels+1;
             do {
-                if(cs._type===this.keys.class) {
-                    ancestors.push(cs);
-                } 
-                cs = this.trackParent(cs);
+                let _pk = this.trackParent(cs);
+                if(!_pk) break;
+                // up and up
+                cs = this.categories[_pk];
+                if(!cs) break;
+                // push ancestors
+                ancestors.push(cs);
+                // to prevent infinite loop
+                console.log(max, _pk, cs);
+                max -= 1;
             } while(cs && 0<=max);
-            let sels = ancestors.reverse();
-            this.cursor = sels[sels.length-1];
-            this.selecteds = sels.concat([null]);
+
+            ancestors.reverse();
+            let sels = new Array(this.hierarchy_levels).fill(null);
+            ancestors.forEach((p,i)=>sels[i]=p);
+            // update selecteds
+            this.selecteds = sels;
             this.extensions = [];
+            this.query = node._name;
+            // refresh all
+            this.cursor = node;
         }
     },
     watch: {
         cursor() {
+            if(this.cursor._type === this.keys.entity) {
+                this.query = this.cursor._name;
+            } 
             this.refreshGraph();
         },
         extensions() {
@@ -179,13 +213,32 @@ export default {
                     catch{ return []; }
                 });
             stems = [this.hierarchy].concat(stems);
-            console.log('stems', this.selecteds, stems);
             return stems;
         },
         items() {
-            // TODO: fit items
-            return [];
+            // find latest item
+            let latest = this.selecteds.reduce((g,sel)=>{
+                return sel || g || null;
+            }, null);
+            //
+            if(latest==null) {
+                return Object.values(this.entities);
+            }
+            //
+            let items = [];
+            let stacks = [latest];
+            while(0<stacks.length) {
+                let cursor = stacks.shift();
 
+                // append items
+                items.push(...this.childs_of(cursor, this.keys.entity));
+                // append sub categories
+                stacks.push(...this.childs_of(cursor, this.keys.category));
+            }
+
+            // console.log('selected', latest, items);
+
+            return items;
         }
     },
     mounted() {
@@ -196,8 +249,10 @@ export default {
             searches: '',
             selecteds: new Array(dataset.hierarchy_levels).fill(null),
             stamped: Date.now(),
+            stampq: Date.now(),
             cursor: null,
             extensions: [],
+            query: null,
             ...dataset,
         };
     }
