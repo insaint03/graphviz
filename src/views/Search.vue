@@ -46,6 +46,12 @@ import VGraph from '@/components/VGraph.vue';
 import ChipMenu from '@/components/ChipMenu.vue'
 import SearchMenu from '@/components/SearchMenu.vue'
 
+const initializes = [
+    '방송',
+    '기기',
+    '사용기기',
+]
+
 export default {
     name: 'SearchScreen',
     components: {
@@ -242,7 +248,10 @@ export default {
         }
     },
     mounted() {
-        // this.selecteds = [this.hierarchy[0]];
+        this.selecteds = initializes.map((_id)=>this.categories[_id] || this.entities[_id] || null)
+            .filter((v)=>v!=null);
+        // this.cursor = this.selecteds[-1];
+        this.cursor = this.selecteds[this.selecteds.length-1];
     },
     data() {
         return {
